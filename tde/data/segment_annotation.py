@@ -56,7 +56,8 @@ class SegmentAnnotation(collections.Sequence):
                                      self.tokens[-1].interval.end)
         if not all(t1.interval.end == t2.interval.start
                    for t1, t2 in zip(self.tokens[:-1], self.tokens[1:])):
-            raise ValueError('Non-contiguous tokens.')
+            # raise ValueError('Non-contiguous tokens.')
+            pass
 
     def __len__(self):
         return len(self.tokens)

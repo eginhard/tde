@@ -87,7 +87,8 @@ class Interval(object):
 
     def __eq__(self, other):
         if isinstance(other, Interval):
-            return self.start == other.start and self.end == other.end
+            return self.isclose(self.start, other.start) and self.isclose(self.end, other.end)
+            # return self.start == other.start and self.end == other.end
         else:
             return False
 
@@ -100,6 +101,9 @@ class Interval(object):
     def __iter__(self):
         yield self.start
         yield self.end
+
+    def isclose(self, a, b, rel_tol=1e-09, abs_tol=0.0):
+        return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
     def length(self):
         """
