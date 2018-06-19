@@ -86,7 +86,7 @@ def load_filesets(phnfile, wrdfile):
         fragments.append(FileSet(phn_fragments, wrd_fragments))
     return fragments
 
-def load(phnfile, wrdfile, outdir):
+def load(phnfile, wrdfile, outdir, lang):
     fragments = load_filesets(phnfile, wrdfile)
     phn_fragments, wrd_fragments = zip(*fragments)
 
@@ -112,20 +112,22 @@ def load(phnfile, wrdfile, outdir):
     (phn_corpus.tokens_exact(name, interval)
      for name, interval, mark in wrd_corpus.iter_fragments())
 
+    prefix = 'globalphone-' + lang
+
     # write concatenated phn, wrd files
-    with open(path.join(outdir, 'globalphone.phn'), 'w') as fp:
+    with open(path.join(outdir, prefix + '.phn'), 'w') as fp:
         for fragment in sorted(chain.from_iterable(phn_fragments),
                                key=lambda x: (x.name, x.interval.start)):
             fp.write('{0} {1:.2f} {2:.2f} {3}\n'.format(
                 fragment.name, fragment.interval.start, fragment.interval.end,
                 fragment.mark))
-    with open(path.join(outdir, 'globalphone.wrd'), 'w') as fp:
+    with open(path.join(outdir, prefix + '.wrd'), 'w') as fp:
         for fragment in sorted(chain.from_iterable(wrd_fragments),
                                key=lambda x: (x.name, x.interval.start)):
             fp.write('{0} {1:.2f} {2:.2f} {3}\n'.format(
                 fragment.name, fragment.interval.start, fragment.interval.end,
                 fragment.mark))
-    with open(path.join(outdir, 'globalphone.split'), 'w') as fp:
+    with open(path.join(outdir, prefix + '.split'), 'w') as fp:
         for name, interval in sorted(intervals_from_phn.iteritems()):
             fp.write('{0} {1:.2f} {2:.2f}\n'.format(name,
                                                     interval.start,
@@ -133,12 +135,13 @@ def load(phnfile, wrdfile, outdir):
 
     return phn_fragments, wrd_fragments
 
-def make_gold(phn_fragments, outdir, n_jobs, verbose):
-    pairs = extract_gold_fragments(phn_fragments, verbose=verbose, n_jobs=n_jobs)
+def make_gold(phn_fragments, outdir, n_jobs, verbose, lang):
+    pairs = extract_gold_fragments(phn_fragments, verbose=verbose, n_jobs=n_jobs, minlength=3, maxlength=4)
     classes = defaultdict(set)
     for fragment in chain.from_iterable(pairs):
         classes[fragment.mark].add(fragment)
-    with open(path.join(outdir, 'globalphone.classes'), 'w') as fp:
+    prefix = 'globalphone-' + lang
+    with open(path.join(outdir, prefix + '.classes'), 'w') as fp:
         for ix, mark in enumerate(sorted(classes.keys())):
             fp.write('Class {0} [{1}]\n'.format(ix, ','.join(mark)))
             for fragment in sorted(classes[mark],
@@ -148,7 +151,7 @@ def make_gold(phn_fragments, outdir, n_jobs, verbose):
                     fragment.name, fragment.interval.start, fragment.interval.end))
     return classes
 
-def split_em(phn_fragments, outdir):
+def split_em(phn_fragments, outdir, lang):
     intervals = {f[0].name: Interval(f[0].interval.start, f[-1].interval.end)
                  for f in phn_fragments}
 
@@ -160,13 +163,15 @@ def split_em(phn_fragments, outdir):
                     for v in intervals_per_speaker.values()
                     if len(v) > 40]
 
-    with open(path.join(outdir, 'globalphone.intervals.cross'), 'w') as fp:
+    prefix = 'globalphone-' + lang
+
+    with open(path.join(outdir, prefix + '.intervals.cross'), 'w') as fp:
         fp.write('\n\n'.join('\n'.join('{0} {1:.2f} {2:.2f}'.format(
             name, interval.start, interval.end)
                                        for name, interval in sorted(ns))
                              for ns in names_cross))
 
-    with open(path.join(outdir, 'globalphone.intervals.within'), 'w') as fp:
+    with open(path.join(outdir, prefix + '.intervals.within'), 'w') as fp:
         fp.write('\n\n'.join('\n'.join('{0} {1:.2f} {2:.2f}'.format(
             name, interval.start, interval.end)
                                        for name, interval in sorted(ns))
@@ -185,9 +190,9 @@ if __name__ == '__main__':
             prog='prep_globalphone.py',
             formatter_class=argparse.RawTextHelpFormatter,
             description='Prep the GlobalPhone corpus for track 2')
-        # parser.add_argument('lang', metavar='LANG',
-        #                     nargs=1,
-        #                     help='2-letter code of language to process')
+        parser.add_argument('lang', metavar='LANG',
+                            nargs=1,
+                            help='2-letter code of language to process')
         parser.add_argument('phnfile', metavar='PHNFILE',
                             nargs=1,
                             help='phone alignment file')
@@ -209,7 +214,7 @@ if __name__ == '__main__':
                             help='number of parallel jobs')
         return vars(parser.parse_args())
     args = parse_args()
-    # lang = args['lang'][0]
+    lang = args['lang'][0]
     phnfile = args['phnfile'][0]
     wrdfile = args['wrdfile'][0]
     outdir = args['outdir'][0]
@@ -218,15 +223,15 @@ if __name__ == '__main__':
 
     if verbose:
         print 'loading files'
-    phn_fragments, wrd_fragments = load(phnfile, wrdfile, outdir)
+    phn_fragments, wrd_fragments = load(phnfile, wrdfile, outdir, lang)
 
     if verbose:
         print 'extracting gold'
-    clsdict = make_gold(phn_fragments, outdir, n_jobs, verbose)
+    #clsdict = make_gold(phn_fragments, outdir, n_jobs, verbose, lang)
 
     if verbose:
         print 'splitting folds'
-    split_em(phn_fragments, outdir)
+    split_em(phn_fragments, outdir, lang)
 
     if verbose:
         print 'all done.'

@@ -10,7 +10,8 @@ from tde.data.interval import Interval
 def NED(clsdict):
     neds = np.fromiter((ned(f1.mark, f2.mark)
                         for f1, f2 in clsdict.iter_pairs(within=True,
-                                                         order=False)),
+                                                         order=False)
+                        if len(f1.mark) > 0 or len(f2.mark) > 0),
                        dtype=np.double)
     if len(neds) == 0:
         r = np.nan

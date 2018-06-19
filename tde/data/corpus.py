@@ -164,5 +164,6 @@ class Corpus(collections.Mapping):
             if (fa.interval.overlap(interval)) > 0:
                 self._cache[key] = fa.tokens_at_interval(interval)
             else:
-                raise ValueError('interval not found: {0}'.format(str(interval)))
+                return []
+                #raise ValueError('interval not found: {0}'.format(str(interval)))
         return self._cache[key]

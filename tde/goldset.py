@@ -88,7 +88,7 @@ def extract_single(tokens1, tokens2, minlength, maxlength, same):
     return r
 
 
-def extract_gold_fragments(tokenlists, minlength=10, maxlength=20,
+def extract_gold_fragments(tokenlists, minlength=3, maxlength=20,
                            verbose=False, n_jobs=1, batch_size=10000):
     """Extract the gold fragments.
 

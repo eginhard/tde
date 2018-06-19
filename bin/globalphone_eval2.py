@@ -252,20 +252,23 @@ def _nlp_sub(disc_clsdict, gold_clsdict, names, label, verbose, n_jobs):
                                                     (disc_clsdict.restrict(ns,
                                                                            True))
                                                     for ns in names)
-        cov_score = Parallel(n_jobs=n_jobs,
-                             verbose=5 if verbose else 0,
-                             pre_dispatch='n_jobs')(delayed(cov)\
-                                                    (disc_clsdict.restrict(ns,
-                                                                           False),
-                                                     gold_clsdict.restrict(ns,
-                                                                           False))
-                                                    for ns in names)
+        # cov_score = Parallel(n_jobs=n_jobs,
+        #                      verbose=5 if verbose else 0,
+        #                      pre_dispatch='n_jobs')(delayed(cov)\
+        #                                             (disc_clsdict.restrict(ns,
+        #                                                                    False),
+        #                                              gold_clsdict.restrict(ns,
+        #                                                                    False))
+        #                                             for ns in names)
     # don't replace nan's by 1, but ignore them, unless all values in ned_score
     # are nan
-    ned_score, cov_score = np.array(ned_score), np.array(cov_score)
-    ned_score, cov_score = aggregate(ned_score, 1), aggregate(cov_score)
-    return np.array(ned_score), np.array(cov_score)
-
+    ned_score = np.array(ned_score)
+    ned_score = aggregate(ned_score, 1)
+    # ned_score, cov_score = np.array(ned_score), np.array(cov_score)
+    # ned_score, cov_score = aggregate(ned_score, 1), aggregate(cov_score)
+    # return np.array(ned_score), np.array(cov_score)
+    return np.array(ned_score), np.array(ned_score)
+    
 
 def nlp(disc_clsdict, gold_clsdict, fragments_within, fragments_cross,
         dest, verbose, n_jobs):
@@ -385,7 +388,7 @@ if __name__ == '__main__':
             description='Evaluate spoken term discovery on the globalphone dataset',
             epilog="""Example usage:
 
-$ ./globalphone_eval2 my_sample.classes resultsdir/
+$ ./globalphone_eval2 my_sample.classes resultsdir/ SP
 
 evaluates STD output `my_sample.classes` on the globalphone dataset and stores the
 output in `resultsdir/`.
@@ -407,6 +410,8 @@ fileID starttime endtime
         parser.add_argument('outdir', metavar='DESTINATION',
                             nargs=1,
                             help='location for the evaluation results')
+        parser.add_argument('lang', metavar='LANG', nargs=1,
+                            help='GlobalPhone language to evaluate')
         parser.add_argument('-f', '--force-truncate',
                             action='store_true',
                             dest='truncate',
@@ -442,6 +447,7 @@ fileID starttime endtime
 
     disc_clsfile = args['disc_clsfile'][0]
     dest = args['outdir'][0]
+    lang = args['lang'][0]
 
     if getattr(sys, 'frozen', False):
         # frozen
@@ -453,12 +459,14 @@ fileID starttime endtime
         resource_dir = path.join(rdir, 'resources')
 
 
-    fragments_cross_file  = path.join(resource_dir, 'globalphone.intervals.cross')
-    fragments_within_file = path.join(resource_dir, 'globalphone.intervals.within')
-    gold_clsfile          = path.join(resource_dir, 'globalphone.classes')
-    phn_corpus_file       = path.join(resource_dir, 'globalphone.phn')
-    wrd_corpus_file       = path.join(resource_dir, 'globalphone.wrd')
-    split_file            = path.join(resource_dir, 'globalphone.split')
+    prefix = 'globalphone-' + lang
+    fragments_cross_file  = path.join(resource_dir, prefix + '.intervals.cross')
+    fragments_within_file = path.join(resource_dir, prefix + '.intervals.within')
+    # gold_clsfile          = path.join(resource_dir, prefix + '.classes')
+    gold_clsfile = disc_clsfile
+    phn_corpus_file       = path.join(resource_dir, prefix + '.phn')
+    wrd_corpus_file       = path.join(resource_dir, prefix + '.wrd')
+    split_file            = path.join(resource_dir, prefix + '.split')
 
     if verbose:
         print 'globalphone_eval2 version {0}'.format(VERSION)
